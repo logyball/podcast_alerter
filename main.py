@@ -56,7 +56,7 @@ def parse_ep(ep: dict) -> tuple:
     title = ep.get('title', 'title not found')
     summary = ep.get('subtitle', None)
     if not summary:
-        summary =  re.sub('<[^<]+?>', '', ep.get('summary', ''))
+        summary = re.sub(r'[^a-zA-Z0-9_,. ()]', '', re.sub('<[^<]+?>', '', ep.get('summary', '')))
     published_raw = ep.get('published', None)
 
     published_dt, err = parse_datetime(dt=published_raw)
