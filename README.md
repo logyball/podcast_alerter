@@ -86,4 +86,4 @@ I used https://castos.com/tools/find-podcast-rss-feed/
 
 ## Future Work
 
-So far I've tested this with `libsyn.com`, `soundcloud.com`, and other podcasts' custom RSS feeds.  Hopefully it's generic enough for all the possible permutations!
+So far I've tested this with `libsyn.com`, `soundcloud.com`, `substack`, and other podcasts' custom RSS feeds.  Hopefully it's generic enough for all the possible permutations!

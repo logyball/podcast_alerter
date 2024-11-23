@@ -1,4 +1,4 @@
-import scrollphathd as sphd, feedparser as fp, requests, time, datetime, sys, pytz
+import scrollphathd as sphd, feedparser as fp, time, datetime, sys, pytz, re
 from dotenv import load_dotenv
 from loguru import logger
 from os import environ
@@ -32,27 +32,43 @@ def load_config() -> tuple:
     }, False
 
 
+def parse_datetime(dt: str) -> tuple:
+    logger.debug(f"Parsing dt: {dt}")
+
+    if not dt:
+        logger.error('dt is empty')
+        return (None, True)
+
+    for f in [DT_FORMAT_EP, DT_FORMAT_FEED]:
+        try:
+            published_dt = datetime.datetime.strptime(dt, f).replace(tzinfo=datetime.timezone.utc)
+            return published_dt, False
+        except ValueError:
+            continue
+    
+    logger.error(f"Could not parse dt: {dt}")
+    return None, True
+
+
 def parse_ep(ep: dict) -> tuple:
     logger.debug("parsing episode")
     
     title = ep.get('title', 'title not found')
-    subtitle = ep.get('subtitle', 'subtitle not found')
+    summary = ep.get('subtitle', None)
+    if not summary:
+        summary =  re.sub('<[^<]+?>', '', ep.get('summary', ''))
     published_raw = ep.get('published', None)
-    if not published_raw:
-        logger.error('no published datetime found for episode')
-        return (None, True)
-    try:
-        published_dt = datetime.datetime.strptime(published_raw, DT_FORMAT_EP)
-    except ValueError as e:
-        logger.error(f"could not parse datetime: {e}")
-        return (None, True)
+
+    published_dt, err = parse_datetime(dt=published_raw)
+    if err:
+        return {}, True
 
     logger.debug(f"episode successfully parsed: ({title})")
-    return ({
+    return {
         'title': title,
-        'subtitle': subtitle,
+        'summary': summary,
         'published': published_dt
-    }, False)
+    }, False
 
 
 def parse_feed(url: str) -> tuple:
@@ -120,13 +136,14 @@ def display_new_podcast_info(name: str, ep_info: dict, cfg: dict):
     env = cfg.get('env')
 
     ep_publish_dt_formatted = datetime.datetime.strftime(ep_info.get('published'), DT_FORMAT_EP_PRINT)
+    
     ep_title = ep_info.get('title')
-    ep_subtitle = ep_info.get('subtitle')
+    ep_summary = ep_info.get('summary')
 
     logger.info(f"New episode of {name} found")
     logger.info(f"Episode published {ep_publish_dt_formatted}")
     logger.info(f"Episode title: {ep_title}")
-    logger.info(f"Episode description: {ep_subtitle}")
+    logger.info(f"Episode description: {ep_summary}")
 
     if env == 'SCROLLPHATHD':
         sphd.clear()
